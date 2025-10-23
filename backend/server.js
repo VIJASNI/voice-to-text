@@ -1,3 +1,11 @@
+import express from "express";
+import cors from "cors";
+import multer from "multer";
+import fs from "fs";
+
+// **this line for OpenAI**
+import { Configuration, OpenAIApi } from "openai";
+
 const express = require('express');
 const cors = require('cors');
 const app = express();

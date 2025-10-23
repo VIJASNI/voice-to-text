@@ -1,4 +1,3 @@
-import logo from './logo.svg';
 import React, { useState } from "react";
 import MicButton from "./components/MicButton";
 import TranscriptionArea from "./components/TranscriptionArea";
@@ -9,17 +8,55 @@ function App() {
   const [text, setText] = useState("");
   const [status, setStatus] = useState("Not recording");
 
-  const handleRecordClick = () => {
-    setStatus("Listening...");
-    setTimeout(() => {
-      setStatus("Not recording");
-      setText("Hello World"); // Temporary dummy text
-    }, 3000);
+  const handleRecordClick = async () => {
+    try {
+      setStatus("Requesting microphone permission...");
+
+      // Request microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setStatus("Listening...");
+
+      const mediaRecorder = new MediaRecorder(stream);
+      const audioChunks = [];
+
+      mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+
+      mediaRecorder.onstop = async () => {
+        setStatus("Processing your voice...");
+        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+        const formData = new FormData();
+        formData.append("audio", audioBlob, "recording.webm");
+
+        try {
+          // Call deployed backend
+          const response = await fetch(
+            "https://voice-to-text-be.vercel.app/api/voice-to-text",
+            { method: "POST", body: formData }
+          );
+
+          if (!response.ok) throw new Error("Failed to fetch transcription");
+
+          const data = await response.json();
+          setText(data.transcribedText || "No text detected");
+          setStatus("✅ Transcription complete!");
+        } catch (error) {
+          console.error("Error fetching transcription:", error);
+          setText("Error fetching transcription");
+          setStatus("❌ Error during transcription");
+        }
+      };
+
+      mediaRecorder.start();
+      setTimeout(() => mediaRecorder.stop(), 5000); // 5-second record limit
+    } catch (err) {
+      console.error("Microphone access denied:", err);
+      setStatus("❌ Microphone permission required!");
+    }
   };
 
   return (
     <div className="App p-5 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-5">Voice-to-Text App</h1>
+      <h1 className="text-2xl font-bold mb-5">🎤 Voice-to-Text App</h1>
       <MicButton onClick={handleRecordClick} />
       <RecordingStatus status={status} />
       <TranscriptionArea text={text} />

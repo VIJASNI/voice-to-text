@@ -64,7 +64,7 @@ function App() {
       mediaRecorder.start();
       console.log("MediaRecorder started");
 
-      // Stop recording after 5 seconds
+      // Stop recording automatically after 5 seconds
       setTimeout(() => {
         if (mediaRecorder.state !== "inactive") mediaRecorder.stop();
       }, 5000);
